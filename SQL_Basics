@@ -1,52 +1,68 @@
+Project was completed as part of an online course from Maven Analytics to refresh my SQL basics from school.
+Data, Schemas, Scenarios, and Questions were already created by the course instructor.
+SQL scripts below were completed by me.
+
+
+
+Scenario:
+- I am a data analyst for a movie rental business that is about to be bought by new owners.
+- The questions below are from the new owners.
+
+
+
 /* 
 1. My partner and I want to come by each of the stores in person and meet the managers. 
 Please send over the managers’ names at each store, with the full address 
 of each property (street address, district, city, and country please).  
 */ 
 
-SELECT * FROM staff; -- staff_id, first_name, last_name, store_id
-SELECT * FROM store; -- store_id, address_id
-SELECT * FROM address; -- address_id, address, district, city_id
-SELECT * FROM city; -- city_id, city, country_id
-SELECT * FROM country; -- country_id, country
+	SELECT * FROM staff; -- staff_id, first_name, last_name, store_id
+	SELECT * FROM store; -- store_id, address_id
+	SELECT * FROM address; -- address_id, address, district, city_id
+	SELECT * FROM city; -- city_id, city, country_id
+	SELECT * FROM country; -- country_id, country
 
-SELECT
-	staff.store_id,
-    CONCAT(staff.first_name, ' ', staff.last_name) AS FullName,
-    address.district,
-    address.address,
-    city.city,
-    country.country
-FROM staff
-	INNER JOIN store
-		ON store.store_id = staff.store_id
-	INNER JOIN address
-		ON address.address_id = store.address_id
-	INNER JOIN city
-		ON address.city_id = city.city_id
-	INNER JOIN country
-		ON city.country_id = country.country_id;
+	SELECT
+		staff.store_id,
+	    CONCAT(staff.first_name, ' ', staff.last_name) AS FullName,
+	    address.district,
+	    address.address,
+	    city.city,
+	    country.country
+	FROM staff
+		INNER JOIN store
+			ON store.store_id = staff.store_id
+		INNER JOIN address
+			ON address.address_id = store.address_id
+		INNER JOIN city
+			ON address.city_id = city.city_id
+		INNER JOIN country
+			ON city.country_id = country.country_id;
+			
+			
 
-	
+
 /*
 2.	I would like to get a better understanding of all of the inventory that would come along with the business. 
 Please pull together a list of each inventory item you have stocked, including the store_id number, 
 the inventory_id, the name of the film, the film’s rating, its rental rate and replacement cost. 
 */
 
-SELECT * FROM inventory; -- inventory_id, film_id, store_id
-SELECT * FROM film; -- film_id, title, description, rating, rental_rate, replacement_cost
+	SELECT * FROM inventory; -- inventory_id, film_id, store_id
+	SELECT * FROM film; -- film_id, title, description, rating, rental_rate, replacement_cost
 
-SELECT
-    inventory.store_id,
-    inventory.inventory_id,
-    film.title,
-    film.rating,
-    film.rental_rate,
-    film.replacement_cost
-FROM inventory
-	LEFT JOIN film
-		ON inventory.film_id = film.film_id;
+	SELECT
+	    inventory.store_id,
+	    inventory.inventory_id,
+	    film.title,
+	    film.rating,
+	    film.rental_rate,
+	    film.replacement_cost
+	FROM inventory
+		LEFT JOIN film
+			ON inventory.film_id = film.film_id;
+
+
 
 
 /* 
@@ -54,18 +70,21 @@ FROM inventory
 of your inventory. We would like to know how many inventory items you have with each rating at each store. 
 */
 
-SELECT
-	rating,
-    COUNT(CASE WHEN store_id = 1 THEN inventory_id ELSE NULL END) AS store_1_stock,
-    COUNT(CASE WHEN store_id = 2 THEN inventory_id ELSE NULL END) AS store_2_stock,
-    COUNT(inventory_id) AS total_copies
-FROM film
-	LEFT JOIN inventory
-		ON film.film_id = inventory.film_id
-GROUP BY rating
-ORDER BY COUNT(inventory_id) DESC;
-
-
+	SELECT
+		rating,
+	    COUNT(CASE WHEN store_id = 1 THEN inventory_id ELSE NULL END) AS store_1_stock,
+	    COUNT(CASE WHEN store_id = 2 THEN inventory_id ELSE NULL END) AS store_2_stock,
+	    COUNT(inventory_id) AS total_copies
+	FROM film
+		LEFT JOIN inventory
+			ON film.film_id = inventory.film_id
+	GROUP BY rating
+	ORDER BY COUNT(inventory_id) DESC;
+	
+	
+	
+	
+	
 /* 
 4. Similarly, we want to understand how diversified the inventory is in terms of replacement cost. We want to 
 see how big of a hit it would be if a certain category of film became unpopular at a certain store.
@@ -73,58 +92,63 @@ We would like to see the number of films, as well as the average replacement cos
 sliced by store and film category. 
 */ 
 
-SELECT * FROM category; -- category_id, name
-SELECT * FROM film; -- film_id, COUNT(film_id), AVG(replacement_cost), SUM(replacement_cost)
-SELECT * FROM film_category; -- film_id, category_id
-SELECT * FROM inventory; -- store_id, film_id
+	SELECT * FROM category; -- category_id, name
+	SELECT * FROM film; -- film_id, COUNT(film_id), AVG(replacement_cost), SUM(replacement_cost)
+	SELECT * FROM film_category; -- film_id, category_id
+	SELECT * FROM inventory; -- store_id, film_id
 
-SELECT
-    category.name,
-    COUNT(CASE WHEN inventory.store_id = 1 THEN film.film_id ELSE NULL END) AS store_1_copies,
-    COUNT(CASE WHEN inventory.store_id = 2 THEN film.film_id ELSE NULL END) AS store_2_copies,
-    ROUND(AVG(CASE WHEN inventory.store_id = 1 THEN film.replacement_cost ELSE NULL END),2) AS store_1_replacement_avg,
-    ROUND(AVG(CASE WHEN inventory.store_id = 2 THEN film.replacement_cost ELSE NULL END),2) AS store_2_replacement_avg,
-    ROUND(SUM(CASE WHEN inventory.store_id = 1 THEN film.replacement_cost ELSE NULL END),2) AS store_1_replacement_total,
-    ROUND(SUM(CASE WHEN inventory.store_id = 2 THEN film.replacement_cost ELSE NULL END),2) AS store_2_replacement_total,
-    ROUND(SUM(film.replacement_cost),2) AS category_total_replacement_cost
-FROM inventory
-	INNER JOIN film
-		ON inventory.film_id = film.film_id
-	INNER JOIN film_category
-		ON film.film_id = film_category.film_id
-	INNER JOIN category
-		ON film_category.category_id = category.category_id
-GROUP BY category.name
-ORDER BY ROUND(SUM(film.replacement_cost),2);
+	SELECT
+	    category.name,
+	    COUNT(CASE WHEN inventory.store_id = 1 THEN film.film_id ELSE NULL END) AS store_1_copies,
+	    COUNT(CASE WHEN inventory.store_id = 2 THEN film.film_id ELSE NULL END) AS store_2_copies,
+	    ROUND(AVG(CASE WHEN inventory.store_id = 1 THEN film.replacement_cost ELSE NULL END),2) AS store_1_replacement_avg,
+	    ROUND(AVG(CASE WHEN inventory.store_id = 2 THEN film.replacement_cost ELSE NULL END),2) AS store_2_replacement_avg,
+	    ROUND(SUM(CASE WHEN inventory.store_id = 1 THEN film.replacement_cost ELSE NULL END),2) AS store_1_replacement_total,
+	    ROUND(SUM(CASE WHEN inventory.store_id = 2 THEN film.replacement_cost ELSE NULL END),2) AS store_2_replacement_total,
+	    ROUND(SUM(film.replacement_cost),2) AS category_total_replacement_cost
+	FROM inventory
+		INNER JOIN film
+			ON inventory.film_id = film.film_id
+		INNER JOIN film_category
+			ON film.film_id = film_category.film_id
+		INNER JOIN category
+			ON film_category.category_id = category.category_id
+	GROUP BY category.name
+	ORDER BY ROUND(SUM(film.replacement_cost),2);
 	
-
+	
+	
+	
 /*
 5.	We want to make sure you folks have a good handle on who your customers are. Please provide a list 
 of all customer names, which store they go to, whether or not they are currently active, 
 and their full addresses – street address, city, and country. 
 */
 
-SELECT * FROM customer; -- first_name, last_name, active, address_id
-SELECT * FROM address; -- address_id, address, city_id
-SELECT * FROM city; -- city_id, city, country_id
-SELECT * FROM country; -- country_id, country
+	SELECT * FROM customer; -- first_name, last_name, active, address_id
+	SELECT * FROM address; -- address_id, address, city_id
+	SELECT * FROM city; -- city_id, city, country_id
+	SELECT * FROM country; -- country_id, country
 
-SELECT
-	CONCAT(first_name, ' ', last_name) AS FullName,
-    customer.store_id,
-    customer.active,
-    address,
-    city,
-    country
-FROM customer
-	INNER JOIN address
-		ON customer.address_id = address.address_id
-	INNER JOIN city
-		ON address.city_id = city.city_id
-	INNER JOIN country
-		ON city.country_id = country.country_id;
-
-
+	SELECT
+		CONCAT(first_name, ' ', last_name) AS FullName,
+	    customer.store_id,
+	    customer.active,
+	    address,
+	    city,
+	    country
+	FROM customer
+		INNER JOIN address
+			ON customer.address_id = address.address_id
+		INNER JOIN city
+			ON address.city_id = city.city_id
+		INNER JOIN country
+			ON city.country_id = country.country_id;
+			
+			
+			
+			
+			
 /*
 6.	We would like to understand how much your customers are spending with you, and also to know 
 who your most valuable customers are. Please pull together a list of customer names, their total 
@@ -133,22 +157,25 @@ see this ordered on total lifetime value, with the most valuable customers at th
 */
 
 
-SELECT * FROM customer; -- customer_id, CONCAT(first_name, ' ', last_name) AS FullName
-SELECT * FROM payment; -- payment_id, customer_id, COUNT(rental_id), amount
+	SELECT * FROM customer; -- customer_id, CONCAT(first_name, ' ', last_name) AS FullName
+	SELECT * FROM payment; -- payment_id, customer_id, COUNT(rental_id), amount
 
-SELECT
-	customer.customer_id,
-	CONCAT(first_name, ' ', last_name) AS FullName,
-    COUNT(rental_id) AS total_rentals,
-    SUM(amount) AS total_amount,
-    COUNT(rental_id)*SUM(amount) AS total_lifetime_value
-FROM customer
-	INNER JOIN payment
-		ON customer.customer_id = payment.customer_id
-GROUP BY customer.customer_id
-ORDER BY COUNT(rental_id)*SUM(amount) DESC;
-    
-    
+	SELECT
+		customer.customer_id,
+		CONCAT(first_name, ' ', last_name) AS FullName,
+	    COUNT(rental_id) AS total_rentals,
+	    SUM(amount) AS total_amount,
+	    COUNT(rental_id)*SUM(amount) AS total_lifetime_value
+	FROM customer
+		INNER JOIN payment
+			ON customer.customer_id = payment.customer_id
+	GROUP BY customer.customer_id
+	ORDER BY COUNT(rental_id)*SUM(amount) DESC;
+	
+	
+	
+	
+	
 /*
 7. My partner and I would like to get to know your board of advisors and any current investors.
 Could you please provide a list of advisor and investor names in one table? 
@@ -156,21 +183,24 @@ Could you please note whether they are an investor or an advisor, and for the in
 it would be good to include which company they work with. 
 */
 
-SELECT
-	'advisor' AS type,
-    CONCAT(first_name, ' ', last_name) AS name,
-    'N/A' AS company_name
-FROM advisor
+	SELECT
+		'advisor' AS type,
+	    CONCAT(first_name, ' ', last_name) AS name,
+	    'N/A' AS company_name
+	FROM advisor
 
-UNION
+	UNION
 
-SELECT
-	'investor' AS type,
-    CONCAT(first_name, ' ', last_name) AS name,
-    company_name
-FROM investor;
-
-
+	SELECT
+		'investor' AS type,
+	    CONCAT(first_name, ' ', last_name) AS name,
+	    company_name
+	FROM investor;
+	
+	
+	
+	
+	
 /*
 8. We're interested in how well you have covered the most-awarded actors. 
 Of all the actors with three types of awards, for what % of them do we carry a film?
@@ -178,21 +208,21 @@ And how about for actors with two types of awards? Same questions.
 Finally, how about actors with just one award? 
 */
 
-SELECT * FROM actor_award; -- actor_id, first_name, last_name, awards
-SELECT * FROM inventory; -- inventory_id, film_id, store_id 
-SELECT * FROM film_actor; -- actor_id, film_id
+	SELECT * FROM actor_award; -- actor_id, first_name, last_name, awards
+	SELECT * FROM inventory; -- inventory_id, film_id, store_id 
+	SELECT * FROM film_actor; -- actor_id, film_id
 
-SELECT
-	CASE
-		WHEN actor_award.awards = 'Emmy, Oscar, Tony ' THEN '3 awards'
-        WHEN actor_award.awards IN ('Emmy, Oscar', 'Emmy, Tony', 'Oscar, Tony') THEN '2 awards'
-        ELSE '1 award'
-	END AS number_of_awards,
-    ROUND(AVG(CASE WHEN actor_award.actor_id IS NULL THEN 0 ELSE 1 END),2) AS pct_w_one_film
-FROM actor_award
-GROUP BY
-	CASE
-		WHEN actor_award.awards = 'Emmy, Oscar, Tony ' THEN '3 awards'
-        WHEN actor_award.awards IN ('Emmy, Oscar', 'Emmy, Tony', 'Oscar, Tony') THEN '2 awards'
-        ELSE '1 award'
-	END
+	SELECT
+		CASE
+			WHEN actor_award.awards = 'Emmy, Oscar, Tony ' THEN '3 awards'
+		WHEN actor_award.awards IN ('Emmy, Oscar', 'Emmy, Tony', 'Oscar, Tony') THEN '2 awards'
+		ELSE '1 award'
+		END AS number_of_awards,
+	    ROUND(AVG(CASE WHEN actor_award.actor_id IS NULL THEN 0 ELSE 1 END),2) AS pct_w_one_film
+	FROM actor_award
+	GROUP BY
+		CASE
+			WHEN actor_award.awards = 'Emmy, Oscar, Tony ' THEN '3 awards'
+		WHEN actor_award.awards IN ('Emmy, Oscar', 'Emmy, Tony', 'Oscar, Tony') THEN '2 awards'
+		ELSE '1 award'
+		END
