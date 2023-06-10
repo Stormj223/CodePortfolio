@@ -1,1 +1,440 @@
+The following code was part of an online course with Maven Analytics.
+It walked through the basics of Database Administration including
+  -Creating & Altering Tables / Schemas
+  -Modifying Records
+  -Store Procedures / Triggers
+  -Database Design / Normalization
+  -EER Diagrams
+  
+There was a good balance of code and UI practice, however all examples are extremely simple in nature as this was a beginner course.
+Mainly taken to understand the basics of what goes on behind the analysis.
 
+
+-- CREATING & ALTERING SCHEMAS / TABLES
+
+      USE toms_marketing_stuff;
+
+      CREATE TABLE publishers (
+        publisher_id INT,
+          publisher_name CHAR (65)
+      );
+
+      CREATE TABLE publisher_spend (
+        publisher_id INT,
+          month DATE,
+          spend DECIMAL
+      );
+
+      DROP TABLE
+        publishers,
+        publisher_spend;
+
+      CREATE TABLE publishers (
+        publisher_id INT NOT NULL,
+          publisher_name CHAR (65),
+          PRIMARY KEY (publisher_id)
+      );
+
+      CREATE TABLE publisher_spend (
+        publisher_spend_id VARCHAR(45) NOT NULL,
+          publisher_id INT NOT NULL,
+          month DATE NOT NULL,
+          spend DECIMAL(10,2) NOT NULL,
+          PRIMARY KEY (publisher_spend_id)
+      );
+
+      USE thriftshop;
+
+      SELECT * FROM customer_purchases;
+      SELECT * FROM customers;
+      SELECT * FROM inventory;
+
+      -- added two new columns purchased_at & updated_at  on customer_purchases table through UI
+      -- dropped updated_at through UI
+
+      ALTER TABLE customer_purchases
+      DROP COLUMN customer_id;
+
+      ALTER TABLE customer_purchases
+      ADD COLUMN purchase_amount DECIMAL(10,2) AFTER customer_purchase_id;
+
+
+      USE candystore;
+
+      -- delted hourly_wage column on employees table via UI
+
+      ALTER TABLE employees
+      ADD COLUMN avg_customer_rating DECIMAL(10,1);
+
+      SELECT * FROM employees;
+
+      USE myfirstschema;
+      -- Dropped table myfirsttableUI via UI
+      -- Droppped schema myfirstschmema via UI
+
+      USE mycodecreatedschema;
+      DROP SCHEMA mycodecreatedschema;
+
+      USE candystore;
+
+      DROP TABLE candy_products;
+      DROP SCHEMA candystore_old;
+
+
+-- INSERTING, UPDATING, & DELETING RECORDS
+
+      -- Inserting Records Into Tables
+
+      USE thriftshop;
+
+      SELECT * FROM inventory;
+
+      INSERT INTO inventory VALUES
+      (10, 'wolf skin hat', 1);
+
+      INSERT INTO inventory VALUES
+      (11, 'fur fox skin', 1),
+      (12, 'plaid button-up shirt', 8),
+      (13, 'flannel zebra jammies', 6);
+
+      INSERT INTO inventory (inventory_id, item_name) VALUES
+      (14, 'wolf skin sneakers');
+
+      INSERT INTO inventory VALUES
+      (15, 'item that will not exist');
+      -- statement won't run because last value and/or column names not given
+
+
+      -- Updating Data Records
+
+      USE thriftshop;
+
+      SELECT * FROM inventory;
+
+      UPDATE inventory
+      SET number_in_stock = 0 -- we sold out
+        -- if you don't include the WHERE clause, it will update every record as 0
+      WHERE inventory_id IN (1,9);
+
+      UPDATE inventory
+      SET number_in_stock = 0 -- we sold out
+      WHERE item_name = 'fur coat';
+      /* UPDATE statement will not run because where clause is on column that could potentially repeat
+      so "SafeMode" is preventing it.
+      It's better to use WHERE with the primary key of the table.
+      */
+
+      USE candystore;
+
+      SELECT * FROM employees;
+
+      INSERT INTO employees (employee_id, first_name, last_name, hire_date, position) VALUES
+      (7, 'Charles', 'Munger', '2020-03-15', 'Clerk'),
+      (8, 'William', 'Gates', '2020-03-15', 'Clerk');
+
+      -- ONE BY ONE
+
+      UPDATE employees
+      SET avg_customer_rating = 4.80
+          WHERE employee_id = 1;
+
+      UPDATE employees
+      SET avg_customer_rating = 4.60
+          WHERE employee_id = 2;
+
+      UPDATE employees
+      SET avg_customer_rating = 4.75
+          WHERE employee_id = 3;
+
+      UPDATE employees
+      SET avg_customer_rating = 4.90
+          WHERE employee_id = 4;
+
+      UPDATE employees
+      SET avg_customer_rating = 4.75
+          WHERE employee_id = 5;
+
+      UPDATE employees
+      SET avg_customer_rating = 4.20
+          WHERE employee_id = 6;
+
+      UPDATE employees
+      SET avg_customer_rating = 5.00
+          WHERE employee_id IN (7,8);
+
+      -- CASE STATEMENT
+      UPDATE employees
+      SET avg_customer_rating =
+        CASE
+        WHEN employee_id = 1 THEN 4.80
+          WHEN employee_id = 2 THEN 4.60
+        WHEN employee_id = 3 THEN 4.75
+        WHEN employee_id = 4 THEN 4.90
+        WHEN employee_id = 5 THEN 4.75
+        WHEN employee_id = 6 THEN 4.20
+          ELSE 5.00
+          END
+      WHERE employee_id IN (1,2,3,4,5,6,7,8);
+
+
+
+      -- Deleting Specific Records
+
+      USE thriftshop;
+      SELECT @@autocommit;
+      -- IF 0, then need to add commit statement to make changes permanenant
+        -- Otherwise, ROLLBACK; can be used to reverse changes
+      -- IF 1, any changes are permanenant
+
+      SELECT * FROM inventory;
+
+      DELETE FROM inventory
+      WHERE inventory_id = 7; -- Primary Key
+      COMMIT;
+
+      -- Deleting ALL Records
+
+      USE thriftshop;
+
+      SELECT * FROM customers;
+      SET autommit = OFF;
+
+      DELETE FROM customers
+      WHERE customer_id BETWEEN 1 AND 6; -- PK must be defined, SafeMode might prevent anyway
+      COMMIT;
+
+      TRUNCATE TABLE customers; -- best way to delete all records
+
+
+      use candystore;
+
+      SELECT * FROM employees;
+
+      DELETE FROM employees
+      WHERE employee_id = 4;
+      COMMIT;
+
+      SELECT * FROM customer_reviews;
+      TRUNCATE TABLE customer_reviews;
+
+
+
+-- COURSE PROJECT
+
+      USE mavenmoviesmini;
+
+      SELECT * FROM inventory_non_normalized
+      WHERE store_id = 2;
+
+      /*
+      1. How would you break down the non_normalized table into multiple tables? What would be the names?
+      */
+
+      -- TABLE employee | employee_id PK, store_id FK, store_manager_first_name, store_manager_last_name
+      -- TABLE film | film_id PK, title, description, release_year, rental_rate, rating
+      -- TABLE inventory | inventory_id PK, film_id FK, store_id FK
+      -- TABLE store | store_id PK, store_address, store_city, store_district
+
+      /*
+      2. Create a new schema with the above tables and populate the previous schema's data into the new one.
+      */
+
+      CREATE SCHEMA midcourseproject;
+      USE midcourseproject;
+
+      CREATE TABLE midcourseproject.employee (
+        employee_id INT NOT NULL,
+          store_id TINYINT NOT NULL,
+          store_manager_first_name VARCHAR(45) NOT NULL,
+          store_manager_last_name VARCHAR(45) NOT NULL,
+        PRIMARY KEY (employee_id)
+      );
+
+      INSERT INTO employee VALUES
+      (1, 1, 'Mike', 'Hillyer'),
+      (2, 2, 'Jon', 'Stephens');
+
+
+      CREATE TABLE midcourseproject.film
+      SELECT DISTINCT
+        film_id,
+          title,
+          description,
+          release_year,
+          rental_rate,
+          rating
+      FROM mavenmoviesmini.inventory_non_normalized;
+
+      CREATE TABLE midcourseproject.inventory
+      SELECT
+        inventory_id,
+          film_id,
+          store_id
+      FROM mavenmoviesmini.inventory_non_normalized;
+
+      CREATE TABLE midcourseproject.store
+      SELECT DISTINCT
+        store_id,
+          -- ADD employee_id
+          store_address,
+          store_city,
+          store_district
+      FROM mavenmoviesmini.inventory_non_normalized;
+
+      ALTER TABLE store
+      ADD COLUMN employee_id INT AFTER store_id;
+
+      UPDATE store
+      SET employee_id = 1
+      WHERE store_id = 1;
+
+      UPDATE store
+      SET employee_id = 2
+      WHERE store_id = 2;
+
+      SELECT * FROM employee;
+      SELECT * FROM film;
+      SELECT * FROM inventory;
+      SELECT * FROM store;
+
+      /*
+      3. Utilize the UI and at least one block of code to connect Foreign Keys.
+      */
+
+      -- Connect FK film_id on inventory table to film table
+
+      ALTER TABLE inventory
+      ADD FOREIGN KEY (store_id) REFERENCES store(store_id);
+
+      /*
+      4. Explain to a non-technical client why this is a better way.
+      */
+
+      /*
+      Splitting up the data into multiple tables reduces duplicates, clearly defines values and columns,
+      and maintains data integrity.
+      All of these factor into accurate results when querying or performing analysis.
+      */
+
+
+
+-- ADVANCED CONCEPTS
+
+      USE candystore;
+
+      -- Added Index on employee_id column in UI
+
+      -- Added Unique Constraint via UI
+
+      USE thriftshop;
+      SELECT * FROM inventory;
+
+      -- changed inventory.item_name to unique
+      -- as a result, we can't add a record with a duplicate item_name
+      INSERT INTO inventory VALUES
+      (14, 'fur fox skin', 1);
+      -- Error Code: 1062. Duplicate entry '14' for key 'inventory.PRIMARY'
+
+      -- Added NON-NULL Constraint via UI
+
+
+      -- ASSIGNMENT
+
+      USE sloppyjoes;
+
+      SELECT * FROM customer_orders;
+      SELECT * FROM menu_items;
+      SELECT * FROM staff;
+
+      UPDATE customer_orders
+      SET order_total = 0
+      WHERE order_id IN (3,8,12,16,19);
+
+
+      -- STORED PROCEDURES
+      -- Store frequently used queries on the server
+      -- this is a simple example but in reality, sp's are for much more complex queries
+
+      USE thriftshop;
+
+      SELECT * FROM inventory;
+
+      -- changing the delimiter from ; to //
+      DELIMITER //
+      -- creating the procedure
+      CREATE PROCEDURE sp_selectALLInventory()
+      BEGIN
+        SELECT * FROM inventory;
+      END //
+      -- Changing the delimiter back to the default ;
+      DELIMITER ;
+
+      -- calling the procedure that we have created
+      CALL sp_selectALLInventory();
+
+      -- if we later want to DROP the procedure, we can use this...
+      DROP PROCEDURE IF EXISTS sp_selectALLInventory ;
+
+
+      -- ASSIGNMENT
+
+      USE sloppyjoes;
+
+      SELECT staff_id, COUNT(staff_id) AS number_of_orders
+        FROM customer_orders
+        GROUP BY staff_id;
+
+      DELIMITER //
+      CREATE PROCEDURE sp_staffordersALLtime()
+      BEGIN
+        SELECT staff_id, COUNT(order_id) AS number_of_orders
+        FROM customer_orders
+        GROUP BY staff_id;
+       END //
+       DELIMITER ;
+
+       -- MUST highlight DELIMITER to DELIMITER and use regular lightning bolt to execute
+
+       CALL sp_staffordersALLtime();
+
+       DROP PROCEDURE sp_staffordersALLtime ;
+
+
+        -- TRIGGERS
+
+      USE thriftshop;
+
+      SELECT * FROM inventory;
+      SELECT * FROM customer_purchases;
+
+      CREATE TRIGGER purchaseUpdateInventory
+      AFTER INSERT ON customer_purchases
+      FOR EACH ROW
+        UPDATE inventory
+          -- subtracting an item for each purchase
+        SET number_in_stock = number_in_stock - 1
+          WHERE inventory_id = NEW.inventory_id;
+
+      INSERT INTO customer_purchases VALUES
+      (13, NULL, 3, NULL), -- inventory_id = 3, velour jumpsuit
+      (14, NULL, 4, NULL) -- inventory_id = 4, house slippers
+      ;
+
+      -- ASSIGNMENT
+
+      USE sloppyjoes;
+
+      SELECT * FROM customer_orders;
+      SELECT * FROM menu_items;
+      SELECT * FROM staff;
+
+      CREATE TRIGGER serveUpdateStaffOrders
+      AFTER INSERT ON customer_orders
+      FOR EACH ROW
+        UPDATE staff
+          SET orders_served = orders_served + 1
+          WHERE staff_id = NEW.staff_id;
+
+      INSERT INTO customer_orders VALUES
+      (21,1,3.99),
+      (22,2,9.99);
