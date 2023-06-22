@@ -1,0 +1,564 @@
+This is a beginner SQL analysis.
+I downloaded a credit risk csv file from Kaggle.com.
+I imported it to MySQL for analysis.
+The analysis includes
+  -identifying null values
+  -deleting duplicate records
+  -identifying and cleaning outliers using mean and most frequent values
+  -preliminary analysis (max, min, data integrity)
+  -analysis to identify what attributes affect to loan grade (descriptive)
+  which is a classification system for credit risk
+
+
+USE credit_risk;
+SELECT * FROM dataset; -- 12 columns
+SELECT COUNT(*) from dataset; -- 28,638 rows
+
+-- DATA CLEANING --
+
+	-- Identifying NULL Values
+  SELECT
+  	*
+  FROM dataset
+  WHERE
+  	person_age IS NULL
+  	OR person_income IS NULL
+      OR person_home_ownership IS NULL
+      OR person_emp_length IS NULL
+      OR loan_intent IS NULL
+      OR loan_grade IS NULL
+      OR loan_amnt IS NULL
+      OR loan_int_rate IS NULL
+      OR loan_status IS NULL
+      OR loan_percent_income IS NULL
+      OR cb_person_default_on_file IS NULL
+      OR cb_person_cred_hist_length IS NULL;
+/*
+No NULL values
+*/
+
+	-- Identifying duplicate records
+  SELECT
+  	person_age,
+  	person_income,
+      person_home_ownership,
+      person_emp_length,
+      loan_intent,
+      loan_grade,
+      loan_amnt,
+      loan_int_rate,
+      loan_status,
+      loan_percent_income,
+      cb_person_default_on_file,
+      cb_person_cred_hist_length,
+      COUNT(*)
+  FROM dataset
+  GROUP BY
+  	person_age,
+  	person_income,
+      person_home_ownership,
+      person_emp_length,
+      loan_intent,
+      loan_grade,
+      loan_amnt,
+      loan_int_rate,
+      loan_status,
+      loan_percent_income,
+      cb_person_default_on_file,
+      cb_person_cred_hist_length
+  HAVING COUNT(*) > 1;
+
+/*
+274 records returned
+Deleting duplicate records
+*/
+
+  DELETE d1
+  FROM dataset d1
+  JOIN (
+  	SELECT
+  		person_age,
+  		person_income,
+  		person_home_ownership,
+  		person_emp_length,
+  		loan_intent,
+  		loan_grade,
+  		loan_amnt,
+  		loan_int_rate,
+  		loan_status,
+  		loan_percent_income,
+  		cb_person_default_on_file,
+  		cb_person_cred_hist_length,
+          COUNT(*)
+  	FROM dataset
+  	GROUP BY
+  		person_age,
+  		person_income,
+  		person_home_ownership,
+  		person_emp_length,
+  		loan_intent,
+  		loan_grade,
+  		loan_amnt,
+  		loan_int_rate,
+  		loan_status,
+  		loan_percent_income,
+  		cb_person_default_on_file,
+  		cb_person_cred_hist_length
+  	HAVING COUNT(*) > 1
+  ) d2
+  	ON d1.person_age = d2.person_age
+      AND d1.person_income = d2.person_income
+      AND d1.person_home_ownership = d2.person_home_ownership
+      AND d1.person_emp_length = d2.person_emp_length
+      AND d1.loan_intent = d2.loan_intent
+      AND d1.loan_grade = d2.loan_grade
+      AND d1.loan_amnt = d2.loan_amnt
+      AND d1.loan_int_rate = d2.loan_int_rate
+      AND d1.loan_status = d2.loan_status
+      AND d1.loan_percent_income = d2.loan_percent_income
+      AND d1.cb_person_default_on_file = d2.cb_person_default_on_file
+      AND d1.cb_person_cred_hist_length = d2.cb_person_cred_hist_length
+  ;
+
+SELECT * FROM dataset;
+SELECT COUNT(*) from dataset; -- 28,364 rows
+
+	-- Identifying/Handling outliers & Verifying data integrity
+  SELECT person_age
+  FROM dataset
+  WHERE person_age > 100;
+  
+  UPDATE dataset
+  SET person_age = (
+  	SELECT CAST(avg_value AS DECIMAL(10,2))
+  	FROM (
+  		SELECT AVG(person_age) AS avg_value
+  		FROM dataset
+  	) AS subquery
+  )
+  WHERE person_age > 100;
+/*
+4 rows affected
+*/
+  
+  SELECT MAX(person_income), MIN(person_income)
+  FROM dataset;
+/*
+$6,000,000 MAX
+$4,000 MIN
+*/
+  
+  SELECT DISTINCT(person_home_ownership)
+  FROM dataset;
+/*
+No errors
+*/
+  
+  SELECT person_emp_length
+  FROM dataset
+  WHERE person_emp_length >= 50;
+  
+  UPDATE dataset
+  SET person_emp_length = (
+  	SELECT CAST(avg_value AS DECIMAL(10,2))
+  	FROM (
+  		SELECT AVG(person_emp_length) AS avg_value
+  		FROM dataset
+  	) AS subquery
+  )
+  WHERE person_emp_length > 50;
+/*
+2 rows affected
+*/
+  
+  SELECT DISTINCT(loan_intent)
+  FROM dataset;
+/*
+No errors
+*/
+  
+  SELECT DISTINCT(loan_grade)
+  FROM dataset;
+/*
+No errors
+*/
+  
+  SELECT MAX(loan_amnt), MIN(loan_amnt)
+  FROM dataset;
+/*
+$35,000 MAX
+$500 MIN
+*/
+  
+  SELECT MAX(loan_int_rate), MIN(loan_int_rate)
+  FROM dataset;
+/*
+23.22% MAX
+5.42% MIN
+*/
+  
+  SELECT DISTINCT(loan_status)
+  FROM dataset;
+/*
+No errors
+*/
+  
+  SELECT MAX(loan_percent_income), MIN(loan_percent_income)
+  FROM dataset;
+/*
+83% MAX
+0% MIN
+*/
+  
+  SELECT DISTINCT(cb_person_default_on_file)
+  FROM dataset;
+/*
+No errors
+*/
+  
+  SELECT MAX(cb_person_cred_hist_length), MIN(cb_person_cred_hist_length)
+  FROM dataset;
+/*
+30 years MAX
+2 years MIN
+*/
+
+SELECT * FROM dataset;
+
+-- DATASET DEMOGRAPHICS --
+
+	-- Averages
+  SELECT
+  	ROUND(AVG(person_age),2) AS avg_age,
+      ROUND(AVG(person_income),2) AS avg_income,
+      ROUND(AVG(person_emp_length),2) AS avg_yrs_emp,
+      ROUND(AVG(loan_amnt),2) AS avg_loan_amnt,
+      ROUND(AVG(loan_int_rate),2) AS avg_loan_rate,
+      ROUND(AVG(loan_percent_income),2) AS avg_loan_percent_income,
+      ROUND(AVG(cb_person_cred_hist_length),2) AS avg_yrs_cred_hist
+  FROM dataset;
+  
+/*
+28 avg years old
+$66,659.50 avg income
+4.8 avg years employed
+$9,660.59 avg loan amount
+11% avg loan rate
+17% avg percent income
+5.8 years avg years credit history
+*/
+
+	-- Categorical Distributions
+  SELECT
+  	person_home_ownership,
+      ROUND(COUNT(*)/(SELECT COUNT(*) FROM dataset),2) * 100 AS percent_of_total
+  FROM dataset
+  GROUP BY 1
+  ORDER BY percent_of_total DESC;
+/*
+RENT | 51%
+MORTGAGE | 41%
+OWN | 8%
+OTHER | 0%
+*/
+  
+  SELECT
+  	loan_intent,
+      ROUND(COUNT(*)/(SELECT COUNT(*) FROM dataset),2) * 100 AS percent_of_total
+  FROM dataset
+  GROUP BY 1
+  ORDER BY percent_of_total DESC;
+/*
+EDUCATION | 20%
+MEDICAL | 18%
+PERSONAL | 17%
+VENTURE | 17%
+DEBTCONSOLIDATION | 16%
+HOMEIMPROVEMENT | 11%
+*/
+  
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(*)/(SELECT COUNT(*) FROM dataset),2) * 100 AS percent_of_total
+  FROM dataset
+  GROUP BY 1
+  ORDER BY percent_of_total DESC;
+/*
+A | 33%
+B | 32%
+C | 20%
+D | 11%
+E | 3%
+F | 1%
+G | 0%
+*/
+  
+  SELECT
+  	loan_status,
+      ROUND(COUNT(*)/(SELECT COUNT(*) FROM dataset),2) * 100 AS percent_of_total
+  FROM dataset
+  GROUP BY 1
+  ORDER BY percent_of_total DESC;
+/*
+0 | 78%
+1 | 22%
+*/
+  
+  SELECT
+  	cb_person_default_on_file,
+      ROUND(COUNT(*)/(SELECT COUNT(*) FROM dataset),2) * 100 AS percent_of_total
+  FROM dataset
+  GROUP BY 1
+  ORDER BY percent_of_total DESC;
+/*
+N | 82%
+Y | 18%
+*/
+
+
+-- ANALYSIS --
+
+/*
+Does credit history length affect interest rate?
+*/
+
+  SELECT
+  	cb_person_cred_hist_length,
+      ROUND(AVG(loan_int_rate),2)
+  FROM dataset
+  GROUP BY cb_person_cred_hist_length
+  ORDER BY cb_person_cred_hist_length;
+/*
+No credit history length does not affect interest rate
+*/
+
+SELECT * FROM dataset;
+SELECT COUNT(*) from dataset; -- 28,364 rows
+
+/*
+Loan amounts vary from $500 to $35,000.
+What is the distribution of loan amounts by intent?
+*/
+
+  SELECT
+  	loan_intent,
+  	ROUND(COUNT(CASE WHEN loan_amnt < 7000 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "<7000",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 7000 AND 13999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[7,000 to 14,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 14000 AND 20999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[14,000 to 21,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 21000 AND 27999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[21,000 to 28,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 28000 AND 35000 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[28,000 to 35,000]"
+  FROM dataset
+  GROUP BY loan_intent WITH ROLLUP
+  ORDER BY COUNT(loan_intent) DESC;
+/*
+The majority of loans are under $14,000 (~78%).
+  <7000 | 40%
+  [7000 to 14000) | 38%
+    [14000 to 21000) | 16%
+    [21000 to 28000) | 5%
+    [28000 to 35000] | 1%
+These percentages are similar to the distribution per intent as well.
+*/
+
+
+/*
+What about for loan_grade?
+*/
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN loan_amnt < 7000 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "<7000",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 7000 AND 13999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[7,000 to 14,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 14000 AND 20999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[14,000 to 21,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 21000 AND 27999 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[21,000 to 28,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 28000 AND 35000 THEN loan_amnt ELSE NULL END)/COUNT(*),2) AS "[28,000 to 35,000]"
+  FROM dataset
+  GROUP BY loan_grade
+  ORDER BY loan_grade;
+/*
+Keeping in mind that the majority of loans are under $14,000,
+this query shows insight that as loan_grade gets closer to G,
+a larger proportion of borrowers have higher loan amounts
+indicating that loan amount plays a factor in grade.
+
+Example: only 12% of G grades are borrowing under $7,000
+whereas 44% of G borrowers are borrowing between $21,000 to $28,000.
+*/
+
+
+/*
+What other factors might contribute to loan grade?
+*/
+
+  SELECT
+  	loan_grade,
+  	ROUND(AVG(person_age),2) AS avg_age,
+      ROUND(AVG(person_income),2) AS avg_income,
+      ROUND(AVG(person_emp_length),2) AS avg_yrs_emp,
+      ROUND(AVG(loan_amnt),2) AS avg_loan_amnt,
+      ROUND(AVG(loan_int_rate),2) AS avg_int_loan_rate,
+      ROUND(AVG(loan_percent_income),2) AS avg_loan_percent_income,
+      ROUND(AVG(cb_person_cred_hist_length),2) AS avg_yrs_cred_hist
+  FROM dataset
+  GROUP BY loan_grade
+  ORDER BY loan_grade;
+/*
+Preliminary Findings:
+	-little significance in age, years employed, credit history length
+    -possible factors include income, loan amount, loan interest rate, loan percent of income
+    
+Further research:
+Loan grade is a classification system for a quality score based on a borrower's credit history,
+quality of the collateral, and likelihood of repayment.
+Loan Interest Rate is typically given before loan grade is assigned. However, the grade assigned
+can later affect the final loan rate. 
+
+What to explore further:
+Borrower's credit history
+	-cb_person_default_on_file
+Quality of the collateral
+	-person_home_ownership
+Likelihood of repayment
+    -loan_intent
+    -loan_amount
+    -loan_int_rate
+    -person_income
+    -loan_percent_income
+*/
+
+-- Default Yes or No
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN cb_person_default_on_file = 'Y' THEN cb_person_default_on_file ELSE NULL END),2) AS "Default_Yes",
+      ROUND(COUNT(CASE WHEN cb_person_default_on_file = 'N' THEN cb_person_default_on_file ELSE NULL END),2) AS "Default_No"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-No borrowers are approved for A or B grade if default is on file
+-Grades C thru D have fairly even split between Yes and No default
+*/
+
+-- Home Ownership
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN person_home_ownership = 'Rent' THEN person_home_ownership ELSE NULL END),2) AS "Rent_Home",
+      ROUND(COUNT(CASE WHEN person_home_ownership = 'Mortgage' THEN person_home_ownership ELSE NULL END),2) AS "Mortgage_Home",
+      ROUND(COUNT(CASE WHEN person_home_ownership = 'Own' THEN person_home_ownership ELSE NULL END),2) AS "Own_Home",
+      ROUND(COUNT(CASE WHEN person_home_ownership = 'Other' THEN person_home_ownership ELSE NULL END),2) AS "Other_Home"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-Rent | majority grade B
+-Mortgage | majority grade A
+-Own | majority grade A
+-Other | majority grade B
+*/
+
+-- Loan Intent
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN loan_intent = 'EDUCATION' THEN loan_intent ELSE NULL END),2) AS "Education",
+      ROUND(COUNT(CASE WHEN loan_intent = 'MEDICAL' THEN loan_intent ELSE NULL END),2) AS "Medical",
+      ROUND(COUNT(CASE WHEN loan_intent = 'PERSONAL' THEN loan_intent ELSE NULL END),2) AS "Personal",
+      ROUND(COUNT(CASE WHEN loan_intent = 'VENTURE' THEN loan_intent ELSE NULL END),2) AS "Venture",
+      ROUND(COUNT(CASE WHEN loan_intent = 'DEBTCONSOLIDATION' THEN loan_intent ELSE NULL END),2) AS "Debt Consolidation",
+      ROUND(COUNT(CASE WHEN loan_intent = 'HOMEIMPROVEMENT' THEN loan_intent ELSE NULL END),2) AS "Home Improvement"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-Grades and Intent are balanced, matching their distributions calculated above.
+-Most likely doesn't have influence in credit risk
+*/
+
+-- Loan Amount
+  SELECT
+  	loan_grade,
+  	ROUND(COUNT(CASE WHEN loan_amnt < 7000 THEN loan_amnt ELSE NULL END),2) AS "<7000",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 7000 AND 13999 THEN loan_amnt ELSE NULL END),2) AS "[7,000 to 14,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 14000 AND 20999 THEN loan_amnt ELSE NULL END),2) AS "[14,000 to 21,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 21000 AND 27999 THEN loan_amnt ELSE NULL END),2) AS "[21,000 to 28,000)",
+  	ROUND(COUNT(CASE WHEN loan_amnt BETWEEN 28000 AND 35000 THEN loan_amnt ELSE NULL END),2) AS "[28,000 to 35,000]"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY COUNT(loan_grade) DESC;
+/*
+-As loan amount increases, loan grade gets closer to G, proportionally
+*/
+
+-- Loan Interest Rate
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN loan_int_rate < 6 THEN loan_int_rate ELSE NULL END),2) AS "<6%",
+  	ROUND(COUNT(CASE WHEN loan_int_rate BETWEEN 6 AND 11.99 THEN loan_int_rate ELSE NULL END),2) AS "[6% to 12%)",
+  	ROUND(COUNT(CASE WHEN loan_int_rate BETWEEN 12 AND 17.99 THEN loan_int_rate ELSE NULL END),2) AS "[12% to 18%)",
+  	ROUND(COUNT(CASE WHEN loan_int_rate BETWEEN 18 AND 24 THEN loan_int_rate ELSE NULL END),2) AS "[18% to 24%]"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-Those given a grade closer to A will generally have lower
+loan interest rates than those closer to G.
+	A | 7.35%
+	B | 11%
+    C | 13.46%
+    D | 15.35%
+    E | 17%
+    F | 18.6%
+    G | 20.25%
+    
+-Less than 5% of loans have a less than 6% interest rate and are exclusively grade A.
+-No loans in grade A have more than 12% interest rate.
+-Loans with 6% to 12% interest rates are most likely going to be grade A or B.
+-Majority of interest rates between 12% to 18% are grade C.
+*/
+
+-- Person Income
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN person_income < 25000 THEN person_income ELSE NULL END),2) AS "<$25,000",
+  	ROUND(COUNT(CASE WHEN person_income BETWEEN 25000 AND 49999 THEN person_income ELSE NULL END),2) AS "[$25,000 to $50,000)",
+  	ROUND(COUNT(CASE WHEN person_income BETWEEN 50000 AND 74999 THEN person_income ELSE NULL END),2) AS "[$50,000 to $75,000)",
+  	ROUND(COUNT(CASE WHEN person_income BETWEEN 75000 AND 99999 THEN person_income ELSE NULL END),2) AS "[$75,000 to $100,000)",
+  	ROUND(COUNT(CASE WHEN person_income > 100000 THEN person_income ELSE NULL END),2) AS ">$100,000"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-Income only slightly impacts grade A but nothing noteworthy.
+-Income does not influence loan grade.
+*/
+-- Loan Percent of Income
+  SELECT
+  	loan_grade,
+      ROUND(COUNT(CASE WHEN loan_percent_income < .15 THEN loan_percent_income ELSE NULL END),2) AS "<15%",
+  	ROUND(COUNT(CASE WHEN loan_percent_income BETWEEN .15 AND .29 THEN loan_percent_income ELSE NULL END),2) AS "[15% to 30%)",
+  	ROUND(COUNT(CASE WHEN loan_percent_income BETWEEN .30 AND .44 THEN loan_percent_income ELSE NULL END),2) AS "[30% to 45%)",
+  	ROUND(COUNT(CASE WHEN loan_percent_income BETWEEN .45 AND .59 THEN loan_percent_income ELSE NULL END),2) AS "[45% to 60%)",
+  	ROUND(COUNT(CASE WHEN loan_percent_income BETWEEN .60 AND .74 THEN loan_percent_income ELSE NULL END),2) AS "[60% to 75%)",
+  	ROUND(COUNT(CASE WHEN loan_percent_income > .75 THEN loan_percent_income ELSE NULL END),2) AS ">75%"
+  FROM dataset
+  GROUP BY loan_grade WITH ROLLUP
+  ORDER BY loan_grade;
+/*
+-Significantly more loans are given grade A if percent of income is less than 30%.
+-Loans generally have a lower grade if percent of income is greater than 30%.
+*/
+
+
+
+
+/*
+Based on your analysis, list the attributes that most contribute to loan grade risk assessment
+*/
+/*
+Borrower's credit history
+	-cb_person_default_on_file
+Quality of the collateral
+	-person_home_ownership (slight influence)
+Likelihood of repayment
+    -loan_amount
+    -loan_int_rate
+    -loan_percent_income
+*/
